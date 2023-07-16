@@ -25,10 +25,25 @@ enum TokenType {
 	TOKEN_COUNT
 };
 
+static const char *Token_Type_Strings[TOKEN_COUNT] = {
+	"TOKEN_SYMBOL",
+	"TOKEN_IDENTIFIER",
+
+	"TOKEN_LITERAL_BOOL",
+	"TOKEN_LITERAL_STRING",
+	"TOKEN_LITERAL_FLOAT",
+	"TOKEN_LITERAL_UINTEGER",
+	"TOKEN_LITERAL_SINTEGER",
+
+	"TOKEN_KEYWORD_IF",
+
+	"TOKEN_EOF",
+};
+
 struct Token {
 	TokenType type = TOKEN_EOF;
 	Location loc;
-	String value;
+	String value; // @Todo not all token types need a full string
 };
 
 static const char symbol_table[] = {
@@ -39,6 +54,10 @@ static const char symbol_table[] = {
 	'}',
 	'(',
 	')',
+	'+',
+	'-',
+	'*',
+	';',
 	'!'
 };
 

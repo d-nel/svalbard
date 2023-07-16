@@ -1,3 +1,6 @@
+#include <string.h>
+#include <assert.h>
+
 #include "parser.h"
 
 inline bool is_symbol(u8 c) {
@@ -10,6 +13,10 @@ inline bool is_symbol(u8 c) {
 
 inline bool is_whitespace(u8 c) {
 	return (c == '\r' || c == '\n' || c == ' ' || c == '\t');
+}
+
+inline bool is_digit(u8 c) {
+	return c >= '0' && c <= '9';
 }
 
 inline bool is_alpha(u8 c) {
@@ -51,32 +58,6 @@ String sieze_buffer(Tokenizer *t) {
 	return token_buffer;
 }
 
-
-Token tokenize_symbol(Tokenizer *t) {
-	auto token = Token{};
-	token.type = TOKEN_SYMBOL;
-	token.loc.l0 = t->line;
-	token.loc.c0 = t->column;
-
-	switch (t->current_8bits) {
-		case '=':
-		case '>':
-		case '<':
-			store_8bits(t);
-			advance_by_8bits(t);
-			if (t->current_8bits == '=') {
-				store_8bits(t);
-				advance_by_8bits(t);
-			}
-			break;
-	}
-
-	token.loc.l1 = t->prev_line;
-	token.loc.c1 = t->prev_column;
-	token.value = sieze_buffer(t);
-	return token;
-}
-
 Tokenizer create_tokenizer(const char *full_path, const char *source) {
 	auto t = Tokenizer{};
 
@@ -106,13 +87,112 @@ void skip_whitespace(Tokenizer *t) {
 }
 
 Token next_token(Tokenizer *t) {
-	if (is_symbol(t->current_8bits)) {
-		return tokenize_symbol(t);
+
+	auto token = Token{};
+	token.loc.l0 = t->line;
+	token.loc.c0 = t->column;
+
+	//
+	// Tokenize String
+	//
+	if (t->current_8bits == '"') {
+		token.type = TOKEN_LITERAL_STRING;
+
+		assert(t->current_8bits == '"');
+		advance_by_8bits(t);
+
+		while (t->current_8bits != '"') {
+			store_8bits(t);
+			advance_by_8bits(t);
+
+			if (t->current_8bits == '\0') {
+				// @Todo error
+				assert(false);
+			}
+		}
+
+		advance_by_8bits(t);
+
+		token.loc.l1 = t->prev_line;
+		token.loc.c1 = t->prev_column;
+		token.value = sieze_buffer(t);
+		return token;
 	}
 
+	//
+	// Tokenize Symbol
+	//
+	if (is_symbol(t->current_8bits)) {
+		token.type = TOKEN_SYMBOL;
+
+		switch (t->current_8bits) {
+			case '{':
+			case '}':
+			case '(':
+			case ')':
+			case '+':
+			case '-':
+			case '*':
+			case ';':
+				store_8bits(t);
+				advance_by_8bits(t);
+				break;
+
+			case '=':
+			case '!':
+			case '>':
+			case '<':
+				store_8bits(t);
+				advance_by_8bits(t);
+				if (t->current_8bits == '=') {
+					store_8bits(t);
+					advance_by_8bits(t);
+				}
+				break;
+
+			default:
+				// @Todo Report an error for invaild/unimplemented symbol.
+				break;
+		}
+
+		token.loc.l1 = t->prev_line;
+		token.loc.c1 = t->prev_column;
+		token.value = sieze_buffer(t);
+		return token;
+	}
+
+	//
+	// Tokenize Keyword, Boolean Literal, or Identifier
+	//
 	if (is_alpha(t->current_8bits)) {
+		token.type = TOKEN_IDENTIFIER;
+
+		bool can_be_keyword_or_bool = true;
+
+		while (is_alpha(t->current_8bits) || t->current_8bits == '_' || is_digit(t->current_8bits)) {
+			if (!is_alpha(t->current_8bits)) can_be_keyword_or_bool = false;
+
+			store_8bits(t);
+			advance_by_8bits(t);
+		}
+
+		token.loc.l1 = t->prev_line;
+		token.loc.c1 = t->prev_column;
+		token.value = sieze_buffer(t);
+
+		if (can_be_keyword_or_bool) {
+			if (strcmp(token.value.data, "if") == 0) {
+				token.type = TOKEN_KEYWORD_IF;
+			} else if (strcmp(token.value.data, "true") == 0) {
+				token.type = TOKEN_LITERAL_BOOL;
+			} else if (strcmp(token.value.data, "false") == 0) {
+				token.type = TOKEN_LITERAL_BOOL;
+			}
+
+		}
+
+		return token;
 	}
 
 	return Token{};
 }
-
