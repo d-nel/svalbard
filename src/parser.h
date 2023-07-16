@@ -57,6 +57,7 @@ static const char symbol_table[] = {
 	'+',
 	'-',
 	'*',
+	'/',
 	';',
 	'!'
 };

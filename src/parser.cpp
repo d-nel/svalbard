@@ -96,6 +96,10 @@ void skip_whitespace(Tokenizer *t) {
 
 Token next_token(Tokenizer *t) {
 	auto token = Token{};
+
+try_again:
+	skip_whitespace(t);
+	
 	token.loc.l0 = t->line;
 	token.loc.c0 = t->column;
 
@@ -179,6 +183,21 @@ Token next_token(Tokenizer *t) {
 			case ';':
 				store_8bits(t);
 				advance_by_8bits(t);
+				break;
+
+			case '/':
+				if (peek_8bits(t) == '/') {
+					advance_by_8bits(t);
+					advance_by_8bits(t);
+					while (t->current_8bits != '\n') {
+						advance_by_8bits(t);
+					}
+					advance_by_8bits(t);
+					goto try_again;
+				} else {
+					store_8bits(t);
+					advance_by_8bits(t);
+				}
 				break;
 
 			case '=':
