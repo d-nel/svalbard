@@ -44,6 +44,14 @@ void advance_by_8bits(Tokenizer *t) {
 	}
 }
 
+u8 peek_8bits(Tokenizer *t) {
+	if (t->index >= t->source.size) {
+		return '\0';
+	}
+
+	return t->source.data[t->index];
+}
+
 void store_8bits(Tokenizer *t) {
 	if (t->current_8bits != '\0') {
 		append(&t->buffer, t->current_8bits);
@@ -87,7 +95,6 @@ void skip_whitespace(Tokenizer *t) {
 }
 
 Token next_token(Tokenizer *t) {
-
 	auto token = Token{};
 	token.loc.l0 = t->line;
 	token.loc.c0 = t->column;
@@ -113,6 +120,42 @@ Token next_token(Tokenizer *t) {
 
 		advance_by_8bits(t);
 
+		token.loc.l1 = t->prev_line;
+		token.loc.c1 = t->prev_column;
+		token.value = sieze_buffer(t);
+		return token;
+	}
+
+	//
+	// Tokenize Number Literal
+	//
+	if ((t->current_8bits == '-' && is_digit(peek_8bits(t))) || is_digit(t->current_8bits)) {
+		auto is_negative = t->current_8bits == '-';
+		auto is_float = false;
+
+		if (is_negative) {
+			store_8bits(t);
+			advance_by_8bits(t);
+		}
+
+		while(is_digit(t->current_8bits) || (t->current_8bits == '.' && !is_float)) {
+			if (t->current_8bits == '.') {
+				is_float = true;
+			}
+
+			store_8bits(t);
+			advance_by_8bits(t);
+		}
+
+		if (is_float) {
+			token.type = TOKEN_LITERAL_FLOAT;
+		} else if (is_negative) {
+			token.type = TOKEN_LITERAL_SINTEGER;
+		} else {
+			token.type = TOKEN_LITERAL_UINTEGER;
+		}
+
+		
 		token.loc.l1 = t->prev_line;
 		token.loc.c1 = t->prev_column;
 		token.value = sieze_buffer(t);
