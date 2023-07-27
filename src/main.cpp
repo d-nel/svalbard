@@ -3,7 +3,7 @@
 #include "parser.h"
 
 int main(int, char **) {
-	auto t = create_tokenizer("no_file", "if (banana == -1.0) // this is a comment\n { ok = 100 + -123 * 4.8; }");
+	auto t = create_tokenizer("no_file", "if (bana_na == -1.0) // this is a comment\n {\n\tok = 100 + -123 * 4.8;\n}\n else {\n\tj += 1;\n}");
 
 	skip_whitespace(&t);
 	auto token = next_token(&t);

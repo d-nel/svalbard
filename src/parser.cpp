@@ -234,9 +234,6 @@ try_again:
 			case '}':
 			case '(':
 			case ')':
-			case '+':
-			case '-':
-			case '*':
 			case ';':
 				store_8bits(t);
 				advance_by_8bits(t);
@@ -257,6 +254,9 @@ try_again:
 				}
 				break;
 
+			case '+':
+			case '-':
+			case '*':
 			case '=':
 			case '!':
 			case '>':
@@ -306,6 +306,8 @@ try_again:
 		if (can_be_keyword_or_bool) {
 			if (strcmp(token.value.data, "if") == 0) {
 				token.type = TOKEN_KEYWORD_IF;
+			} else if (strcmp(token.value.data, "else") == 0) {
+				token.type = TOKEN_KEYWORD_ELSE;
 			} else if (strcmp(token.value.data, "true") == 0) {
 				token.type = TOKEN_LITERAL_BOOL;
 			} else if (strcmp(token.value.data, "false") == 0) {

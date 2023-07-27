@@ -19,6 +19,7 @@ enum TokenType {
 	TOKEN_LITERAL_SINTEGER,
 
 	TOKEN_KEYWORD_IF,
+	TOKEN_KEYWORD_ELSE,
 
 	TOKEN_EOF,
 
@@ -36,6 +37,7 @@ static const char *Token_Type_Strings[TOKEN_COUNT] = {
 	"TOKEN_LITERAL_SINTEGER",
 
 	"TOKEN_KEYWORD_IF",
+	"TOKEN_KEYWORD_ELSE",
 
 	"TOKEN_EOF",
 };
