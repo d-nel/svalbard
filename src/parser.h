@@ -47,19 +47,33 @@ struct Token {
 };
 
 static const char symbol_table[] = {
-	'=',
-	'>',
-	'<',
-	'{',
-	'}',
+	'!',
+	'@',
+	'#',
+	'$',
+	'%',
+	'^',
+	'&',
+	'*',
 	'(',
 	')',
-	'+',
 	'-',
-	'*',
-	'/',
+	'=',
+	'+',
+	'[',
+	'{',
+	']',
+	'}',
+	':',
 	';',
-	'!'
+	'\\',
+	'|',
+	',',
+	'>',
+	//'.',
+	'<',
+	'/',
+	'?'
 };
 
 struct Tokenizer {
@@ -67,10 +81,10 @@ struct Tokenizer {
 	String source;
 	String buffer;
 
-	u64 prev_line = 0;
+	u64 prev_line = 1;
 	u64 prev_column = 0;
 
-	u64 line = 0;
+	u64 line = 1;
 	u64 column = 0;
 
 	usize index = 0;

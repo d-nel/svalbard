@@ -1,7 +1,62 @@
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
+#include <cstdarg>
 
 #include "parser.h"
+
+// @Todo We only support locations that are on a single line, but we should do better than that
+void report_location(Tokenizer *t, Location loc) {
+	u64 line_count = 1;
+	u64 char_count = 0;
+
+	auto code_color  = "\033[0;34m";
+	auto error_color = "\033[0;31m";
+
+	printf("    %s", code_color);
+
+	for (u64 i = 0; i < t->source.size; i++) {
+		u8 c = t->source.data[i];
+		char_count++;
+
+		if (c == '\n') {
+			char_count = 0;
+			line_count++;
+			continue;
+		}
+
+		if (line_count == loc.l0) {
+			if (char_count == loc.c0) {
+				printf("%s", error_color);
+			}
+
+			putchar(c);
+
+			if (char_count == loc.c1) {
+				printf("%s", code_color);
+			}
+		}
+
+		if (line_count > loc.l0) {
+			break;
+		}
+	}
+
+	printf("\033[0m\n");
+}
+
+void report_error(Tokenizer *t, Location loc, const char *fmt, ...) {
+
+	printf("(%s %llu:%llu) error: ", t->full_path.data, loc.l0, loc.c0);
+	va_list args;
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
+	printf("\n");
+
+	report_location(t, loc);
+}
+
 
 inline bool is_symbol(u8 c) {
 	for (usize i = 0; i < array_sizeof(symbol_table); i++) {
@@ -24,7 +79,7 @@ inline bool is_alpha(u8 c) {
 }
 
 void advance_by_8bits(Tokenizer *t) {
-	if (t->index >= t->source.size) {
+	if (t->index > t->source.size) {
 		t->current_8bits = '\0';
 		return;
 	}
@@ -58,7 +113,7 @@ void store_8bits(Tokenizer *t) {
 	}
 }
 
-String sieze_buffer(Tokenizer *t) {
+String seize_buffer(Tokenizer *t) {
 	auto token_buffer = t->buffer;
 
 	t->buffer = create_string("");
@@ -117,8 +172,10 @@ try_again:
 			advance_by_8bits(t);
 
 			if (t->current_8bits == '\0') {
-				// @Todo error
-				assert(false);
+				token.loc.l1 = token.loc.l0;
+				token.loc.c1 = token.loc.c0;
+				report_error(t, token.loc, "We reached the end of the file before getting a second quote symbol (\") to teminate the string.");
+				break;
 			}
 		}
 
@@ -126,7 +183,7 @@ try_again:
 
 		token.loc.l1 = t->prev_line;
 		token.loc.c1 = t->prev_column;
-		token.value = sieze_buffer(t);
+		token.value = seize_buffer(t);
 		return token;
 	}
 
@@ -162,7 +219,7 @@ try_again:
 		
 		token.loc.l1 = t->prev_line;
 		token.loc.c1 = t->prev_column;
-		token.value = sieze_buffer(t);
+		token.value = seize_buffer(t);
 		return token;
 	}
 
@@ -213,13 +270,17 @@ try_again:
 				break;
 
 			default:
-				// @Todo Report an error for invaild/unimplemented symbol.
+				token.loc.l1 = token.loc.l0;
+				token.loc.c1 = token.loc.c0;
+				report_error(t, token.loc, "Unsupported symbol.");
+				advance_by_8bits(t);
 				break;
 		}
 
 		token.loc.l1 = t->prev_line;
 		token.loc.c1 = t->prev_column;
-		token.value = sieze_buffer(t);
+		token.value = seize_buffer(t);
+
 		return token;
 	}
 
@@ -240,7 +301,7 @@ try_again:
 
 		token.loc.l1 = t->prev_line;
 		token.loc.c1 = t->prev_column;
-		token.value = sieze_buffer(t);
+		token.value = seize_buffer(t);
 
 		if (can_be_keyword_or_bool) {
 			if (strcmp(token.value.data, "if") == 0) {
