@@ -321,3 +321,42 @@ try_again:
 
 	return Token{};
 }
+
+//
+// +--------+
+// | Parser |
+// +--------+
+//
+
+inline void next_token(Parser *p) {
+	destroy_string(&p->current_token.value);
+
+	skip_whitespace(&p->t);
+	p->current_token = next_token(&p->t);
+}
+
+Parser create_parser(const char *full_path) {
+	Parser p;
+	
+	p.t = create_tokenizer(full_path, "if (bana_na == -1.0) // this is a comment\n {\n\tok = 100 + -123 * 4.8;\n}\n else {\n\tj += 1;\n}");
+
+	next_token(&p);
+
+	return p;
+}
+
+void destroy_parser(Parser *p) {
+	destroy_tokenizer(&p->t);
+	destroy_string(&p->current_token.value);
+}
+
+
+
+
+
+void print_all_tokens_until_eof(Parser *p) {
+	while (p->current_token.type != TOKEN_EOF) {
+		printf("%-30s%s\n", Token_Type_Strings[p->current_token.type], p->current_token.value.data);
+		next_token(p);
+	}
+}

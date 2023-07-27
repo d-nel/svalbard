@@ -19,6 +19,8 @@ String create_string(const char *cstr) {
 }
 
 void destroy_string(String *str) {
+	if (!str->data) return;
+
 	free((void*)str->data);
 	str->capacity = 0;
 	str->size = 0;
