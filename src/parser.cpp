@@ -5,6 +5,36 @@
 
 #include "parser.h"
 
+// @Todo @Cleanup Find a new home for this
+String read_whole_file(const char *file_path) {
+	String buf;
+
+#ifdef _WIN64
+	FILE *file;
+	if ((fopen_s(&file, file_path, "rb")) != 0) {
+		file = NULL; // @Cleanup Is this required?
+	}
+#else
+	FILE *file = fopen(file_path, "rb");
+#endif
+
+	if (file == NULL) { return buf; }
+
+
+	fseek(file, 0, SEEK_END);
+	buf.size = ftell(file);
+	buf.capacity = buf.size + 1;
+	fseek(file, 0, SEEK_SET);
+
+	buf.data = (char *)malloc(buf.capacity);
+	fread(buf.data, buf.size, 1, file);
+	fclose(file);
+
+	buf.data[buf.size] = '\0';
+
+	return buf;
+}
+
 // @Todo We only support locations that are on a single line, but we should do better than that
 void report_location(Tokenizer *t, Location loc) {
 	u64 line_count = 1;
@@ -121,11 +151,16 @@ String seize_buffer(Tokenizer *t) {
 	return token_buffer;
 }
 
-Tokenizer create_tokenizer(const char *full_path, const char *source) {
+Tokenizer create_tokenizer(const char *full_path) {
 	auto t = Tokenizer{};
 
 	t.full_path = create_string(full_path);
-	t.source = create_string(source);
+	
+	t.source = read_whole_file(full_path);
+	if (t.source.data == NULL) {
+		assert(false); // @Todo error
+	}
+
 	t.buffer = create_string("");
 
 	advance_by_8bits(&t);
@@ -338,7 +373,7 @@ inline void next_token(Parser *p) {
 Parser create_parser(const char *full_path) {
 	Parser p;
 	
-	p.t = create_tokenizer(full_path, "if (bana_na == -1.0) // this is a comment\n {\n\tok = 100 + -123 * 4.8;\n}\n else {\n\tj += 1;\n}");
+	p.t = create_tokenizer(full_path);
 
 	next_token(&p);
 

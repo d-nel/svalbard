@@ -3,7 +3,7 @@
 #include "parser.h"
 
 int main(int, char **) {
-	Parser p = create_parser("test.sv");
+	Parser p = create_parser("test.sva");
 
 	print_all_tokens_until_eof(&p);
 

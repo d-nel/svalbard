@@ -99,16 +99,7 @@ struct Parser {
 	Token current_token;
 };
 
-// Tokenizer create_tokenizer(const char *full_path, const char *source);
-// void destroy_tokenizer(Tokenizer *t);
-
-// void skip_whitespace(Tokenizer *t);
-// Token next_token(Tokenizer *t);
-
-
 Parser create_parser(const char *full_path);
 void destroy_parser(Parser *p);
-
-
 
 void print_all_tokens_until_eof(Parser *p);
