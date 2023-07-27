@@ -2,11 +2,7 @@
 
 #include "types.h"
 #include "dan_string.h"
-
-
-struct Location {
-	u64 l0, c0, l1, c1 = 0;
-};
+#include "ast.h"
 
 enum TokenType {
 	TOKEN_SYMBOL,
@@ -26,7 +22,7 @@ enum TokenType {
 	TOKEN_COUNT
 };
 
-static const char *Token_Type_Strings[TOKEN_COUNT] = {
+static const char *TokenType_Strings[TOKEN_COUNT] = {
 	"TOKEN_SYMBOL",
 	"TOKEN_IDENTIFIER",
 
@@ -101,5 +97,7 @@ struct Parser {
 
 Parser create_parser(const char *full_path);
 void destroy_parser(Parser *p);
+
+Ast_Base *next_node(Parser *p);
 
 void print_all_tokens_until_eof(Parser *p);

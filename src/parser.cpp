@@ -385,13 +385,115 @@ void destroy_parser(Parser *p) {
 	destroy_string(&p->current_token.value);
 }
 
+Ast_Expression *parse_base_expr(Parser *p) {
+	auto expr = new Ast_Expression;
 
+	switch (p->current_token.type) {
+		case TOKEN_LITERAL_FLOAT:
+			{
+				expr->type = EXP_F64;
+				expr->is_literal = true;
+				expr->literal_value._f64 = atof(p->current_token.value.data);
+			}
+			break;
+
+		case TOKEN_LITERAL_SINTEGER:
+			{
+				expr->type = EXP_S64;
+				expr->is_literal = true;
+				expr->literal_value._s64 = atoll(p->current_token.value.data);
+			}
+			break;
+
+		case TOKEN_LITERAL_UINTEGER:
+			{
+				expr->type = EXP_U64;
+				expr->is_literal = true;
+				expr->literal_value._u64 = atoll(p->current_token.value.data);
+			}
+			break;
+
+		default:
+			assert(false); // @Todo
+			break;
+	}
+
+	next_token(p);
+
+	return expr;
+}
+
+Ast_Expression *parse_muldiv(Parser *p) {
+	auto expr = parse_base_expr(p);
+
+	if (p->current_token.type == TOKEN_SYMBOL) {
+		OperatorType op_type = OP_INVALID;
+
+		if (p->current_token.value == "*") {
+			op_type = OP_MUL;
+		} else if(p->current_token.value == "/") {
+			op_type = OP_DIV;
+		} 
+
+		if (op_type != OP_INVALID) {
+			next_token(p);
+
+			auto op_exp = new Ast_Operator();
+			op_exp->type = op_type;
+			op_exp->lhs = expr;
+			op_exp->rhs = parse_base_expr(p);
+			if (!op_exp->rhs) {
+				return NULL;
+			}
+
+			return op_exp;
+		}
+	}
+
+	return expr;
+}
+
+Ast_Expression *parse_addsub(Parser *p) {
+	auto expr = parse_muldiv(p);
+
+	if (p->current_token.type == TOKEN_SYMBOL) {
+		OperatorType op_type = OP_INVALID;
+
+		if (p->current_token.value == "+") {
+			op_type = OP_ADD;
+		} else if(p->current_token.value == "-") {
+			op_type = OP_SUB;
+		} 
+
+		if (op_type != OP_INVALID) {
+			next_token(p);
+
+			auto op_exp = new Ast_Operator();
+			op_exp->type = op_type;
+			op_exp->lhs = expr;
+			op_exp->rhs = parse_muldiv(p);
+			if (!op_exp->rhs) {
+				return NULL;
+			}
+
+			return op_exp;
+		}
+	}
+
+	return expr;
+}
+
+Ast_Base *next_node(Parser *p) {
+	if (p->current_token.type == TOKEN_EOF)  return NULL;
+
+	return parse_addsub(p);
+}
 
 
 
 void print_all_tokens_until_eof(Parser *p) {
 	while (p->current_token.type != TOKEN_EOF) {
-		printf("%-30s%s\n", Token_Type_Strings[p->current_token.type], p->current_token.value.data);
+		printf("%-30s%s\n", TokenType_Strings[p->current_token.type], p->current_token.value.data);
 		next_token(p);
 	}
 }
