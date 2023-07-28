@@ -60,6 +60,13 @@ enum OperatorType {
 	OP_ADD,
 	OP_SUB,
 
+	OP_LESSTHAN,
+	OP_GREATERTHAN,
+	OP_EQUALS,
+	OP_NEQUALS,
+	OP_LTEQUALS,
+	OP_GTEQUALS,
+
 	// Unary
 	OP_NOT,
 
@@ -72,6 +79,14 @@ static const char *OperatorType_Strings[OP_COUNT] = {
 	"/",
 	"+",
 	"-",
+
+	"<",
+	">",
+	"==",
+	"!=",
+	"<=",
+	">=",
+
 	"!",
 };
 

@@ -403,20 +403,46 @@ void destroy_parser(Parser *p) {
 Ast_Expression *parse_expression(Parser *p, u8 precedence) {
 	auto start = p->current_token;
 
-	if (precedence <= 1) {
+	if (precedence <= 3) {
 		auto expr = parse_expression(p, precedence + 1);
 
 		if (p->current_token.type == TOKEN_SYMBOL) {
 			OperatorType op_type = OP_INVALID;
 
-			if (p->current_token.value        == "+" && precedence == 0) {
-				op_type = OP_ADD;
-			} else if (p->current_token.value == "-" && precedence == 0) {
-				op_type = OP_SUB;
-			} else if (p->current_token.value == "*" && precedence == 1) {
-				op_type = OP_MUL;
-			} else if (p->current_token.value == "/" && precedence == 1) {
-				op_type = OP_DIV;
+			if (precedence == 0) {
+				if (p->current_token.value == "==") {
+					op_type = OP_EQUALS;
+				} else if (p->current_token.value == "!=") {
+					op_type = OP_NEQUALS;
+				}
+			}
+
+			if (precedence == 1) {
+				if (p->current_token.value == "<") {
+					op_type = OP_LESSTHAN;
+				} else if (p->current_token.value == ">") {
+					op_type = OP_GREATERTHAN;
+				} else if (p->current_token.value == "<=") {
+					op_type = OP_LTEQUALS;
+				} else if (p->current_token.value == ">=") {
+					op_type = OP_GTEQUALS;
+				}
+			}
+
+			if (precedence == 2) {
+				if (p->current_token.value == "+") {
+					op_type = OP_ADD;
+				} else if (p->current_token.value == "-") {
+					op_type = OP_SUB;
+				}
+			}
+
+			if (precedence == 3) {
+				if (p->current_token.value == "*") {
+					op_type = OP_MUL;
+				} else if (p->current_token.value == "/") {
+					op_type = OP_DIV;
+				}
 			}
 
 			if (op_type != OP_INVALID) {
@@ -457,7 +483,7 @@ Ast_Expression *parse_expression(Parser *p, u8 precedence) {
 
 			auto op = new Ast_Operator();
 			op->type = OP_NOT;
-			op->lhs =  parse_expression(p, 0);
+			op->lhs =  parse_expression(p, precedence);
 
 			set_location(op, op->lhs, op->lhs);
 			return op;
