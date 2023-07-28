@@ -363,6 +363,21 @@ try_again:
 // +--------+
 //
 
+
+void set_location(Ast_Base *node, Token start, Token end) {
+	node->loc.l0 = start.loc.l0;
+	node->loc.c0 = start.loc.c0;
+	node->loc.l1 = end.loc.l1;
+	node->loc.c1 = end.loc.c1;
+}
+
+void set_location(Ast_Base *node, Ast_Base *start, Ast_Base *end) {
+	node->loc.l0 = start->loc.l0;
+	node->loc.c0 = start->loc.c0;
+	node->loc.l1 = end->loc.l1;
+	node->loc.c1 = end->loc.c1;
+}
+
 inline void next_token(Parser *p) {
 	destroy_string(&p->current_token.value);
 
@@ -385,45 +400,52 @@ void destroy_parser(Parser *p) {
 	destroy_string(&p->current_token.value);
 }
 
+Ast_Expression *parse_addsub(Parser *p);
 Ast_Expression *parse_base_expr(Parser *p) {
 	auto expr = new Ast_Expression;
+	auto start = p->current_token;
 
 	switch (p->current_token.type) {
-		case TOKEN_LITERAL_FLOAT:
-			{
-				expr->type = EXP_F64;
-				expr->is_literal = true;
-				expr->literal_value._f64 = atof(p->current_token.value.data);
+		case TOKEN_SYMBOL:
+			if (p->current_token.value == "(") {
+				next_token(p);
+				expr = parse_addsub(p);
+				if (p->current_token.type != TOKEN_SYMBOL || p->current_token.value != ")") {
+					report_error(&p->t, start.loc, "Expected a closing bracket \")\".");
+				}
+				next_token(p);
+				return expr;
+			} else {
+				report_error(&p->t, p->current_token.loc, "Unexpected symbol.");
 			}
+			break;
+		case TOKEN_LITERAL_FLOAT:
+			expr->type = EXP_F64;
+			expr->is_literal = true;
+			expr->literal_value._f64 = atof(p->current_token.value.data);
 			break;
 
 		case TOKEN_LITERAL_SINTEGER:
-			{
-				expr->type = EXP_S64;
-				expr->is_literal = true;
-				expr->literal_value._s64 = atoll(p->current_token.value.data);
-			}
+			expr->type = EXP_S64;
+			expr->is_literal = true;
+			expr->literal_value._s64 = atoll(p->current_token.value.data);
 			break;
 
 		case TOKEN_LITERAL_UINTEGER:
-			{
-				expr->type = EXP_U64;
-				expr->is_literal = true;
-				expr->literal_value._u64 = atoll(p->current_token.value.data);
-			}
+			expr->type = EXP_U64;
+			expr->is_literal = true;
+			expr->literal_value._u64 = atoll(p->current_token.value.data);
 			break;
 
 		case TOKEN_LITERAL_BOOL:
-			{
-				expr->type = EXP_BOOL;
-				expr->is_literal = true;
-				if (p->current_token.value == "true") {
-					expr->literal_value._bool = true;
-				} else if (p->current_token.value == "false") {
-					expr->literal_value._bool = false;
-				} else {
-					// @Todo internal error
-				}
+			expr->type = EXP_BOOL;
+			expr->is_literal = true;
+			if (p->current_token.value == "true") {
+				expr->literal_value._bool = true;
+			} else if (p->current_token.value == "false") {
+				expr->literal_value._bool = false;
+			} else {
+				// @Todo internal error
 			}
 			break;
 
@@ -431,6 +453,8 @@ Ast_Expression *parse_base_expr(Parser *p) {
 			assert(false); // @Todo
 			break;
 	}
+
+	set_location(expr, start, p->current_token);
 
 	next_token(p);
 
@@ -452,15 +476,16 @@ Ast_Expression *parse_muldiv(Parser *p) {
 		if (op_type != OP_INVALID) {
 			next_token(p);
 
-			auto op_exp = new Ast_Operator();
-			op_exp->type = op_type;
-			op_exp->lhs = expr;
-			op_exp->rhs = parse_muldiv(p);
-			if (!op_exp->rhs) {
+			auto op = new Ast_Operator();
+			op->type = op_type;
+			op->lhs = expr;
+			op->rhs = parse_muldiv(p);
+			if (!op->rhs) {
 				return NULL;
 			}
 
-			return op_exp;
+			set_location(op, op->lhs, op->rhs);
+			return op;
 		}
 	}
 
@@ -482,15 +507,16 @@ Ast_Expression *parse_addsub(Parser *p) {
 		if (op_type != OP_INVALID) {
 			next_token(p);
 
-			auto op_exp = new Ast_Operator();
-			op_exp->type = op_type;
-			op_exp->lhs = expr;
-			op_exp->rhs = parse_addsub(p);
-			if (!op_exp->rhs) {
+			auto op = new Ast_Operator();
+			op->type = op_type;
+			op->lhs = expr;
+			op->rhs = parse_addsub(p);
+			if (!op->rhs) {
 				return NULL;
 			}
 
-			return op_exp;
+			set_location(op, op->lhs, op->rhs);
+			return op;
 		}
 	}
 

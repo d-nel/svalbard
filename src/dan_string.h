@@ -14,6 +14,10 @@ inline bool operator== (const String& lhs, const char *rhs) {
 	return strcmp(lhs.data, rhs) == 0;
 };
 
+inline bool operator!= (const String& lhs, const char *rhs) {
+	return strcmp(lhs.data, rhs) != 0;
+};
+
 inline bool operator== (const String& lhs, const String& rhs) {
 	if (lhs.size != rhs.size) return false;
 	return strcmp(lhs.data, rhs.data) == 0;
