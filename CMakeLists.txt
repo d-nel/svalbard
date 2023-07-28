@@ -17,6 +17,7 @@ target_sources(svalbard PRIVATE
 	src/main.cpp
 	src/dan_string.cpp
 	src/parser.cpp
+	src/ast.cpp
 )
 
 # Uncomment bellow to build all source files in one translation unit.

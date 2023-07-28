@@ -413,6 +413,20 @@ Ast_Expression *parse_base_expr(Parser *p) {
 			}
 			break;
 
+		case TOKEN_LITERAL_BOOL:
+			{
+				expr->type = EXP_BOOL;
+				expr->is_literal = true;
+				if (p->current_token.value == "true") {
+					expr->literal_value._bool = true;
+				} else if (p->current_token.value == "false") {
+					expr->literal_value._bool = false;
+				} else {
+					// @Todo internal error
+				}
+			}
+			break;
+
 		default:
 			assert(false); // @Todo
 			break;
@@ -441,7 +455,7 @@ Ast_Expression *parse_muldiv(Parser *p) {
 			auto op_exp = new Ast_Operator();
 			op_exp->type = op_type;
 			op_exp->lhs = expr;
-			op_exp->rhs = parse_base_expr(p);
+			op_exp->rhs = parse_muldiv(p);
 			if (!op_exp->rhs) {
 				return NULL;
 			}
@@ -471,7 +485,7 @@ Ast_Expression *parse_addsub(Parser *p) {
 			auto op_exp = new Ast_Operator();
 			op_exp->type = op_type;
 			op_exp->lhs = expr;
-			op_exp->rhs = parse_muldiv(p);
+			op_exp->rhs = parse_addsub(p);
 			if (!op_exp->rhs) {
 				return NULL;
 			}

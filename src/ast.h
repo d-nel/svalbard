@@ -63,6 +63,14 @@ enum OperatorType {
 	OP_COUNT
 };
 
+static const char *OperatorType_Strings[OP_COUNT] = {
+	"OP_INVALID",
+	"*",
+	"/",
+	"+",
+	"-",
+};
+
 struct Ast_Base {
 	AstType ast_type = AST_BASE;
 
@@ -104,3 +112,5 @@ struct Ast_Operator : Ast_Expression {
 	Ast_Expression *lhs;
 	Ast_Expression *rhs;
 };
+
+void print_node(Ast_Base *node, s32 level = 0);
