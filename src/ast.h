@@ -60,6 +60,9 @@ enum OperatorType {
 	OP_ADD,
 	OP_SUB,
 
+	// Unary
+	OP_NOT,
+
 	OP_COUNT
 };
 
@@ -69,6 +72,7 @@ static const char *OperatorType_Strings[OP_COUNT] = {
 	"/",
 	"+",
 	"-",
+	"!",
 };
 
 struct Ast_Base {

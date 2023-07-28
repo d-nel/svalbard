@@ -400,25 +400,75 @@ void destroy_parser(Parser *p) {
 	destroy_string(&p->current_token.value);
 }
 
-Ast_Expression *parse_addsub(Parser *p);
-Ast_Expression *parse_base_expr(Parser *p) {
-	auto expr = new Ast_Expression;
+Ast_Expression *parse_expression(Parser *p, u8 precedence) {
 	auto start = p->current_token;
 
-	switch (p->current_token.type) {
-		case TOKEN_SYMBOL:
-			if (p->current_token.value == "(") {
-				next_token(p);
-				expr = parse_addsub(p);
-				if (p->current_token.type != TOKEN_SYMBOL || p->current_token.value != ")") {
-					report_error(&p->t, start.loc, "Expected a closing bracket \")\".");
-				}
-				next_token(p);
-				return expr;
-			} else {
-				report_error(&p->t, p->current_token.loc, "Unexpected symbol.");
+	if (precedence <= 1) {
+		auto expr = parse_expression(p, precedence + 1);
+
+		if (p->current_token.type == TOKEN_SYMBOL) {
+			OperatorType op_type = OP_INVALID;
+
+			if (p->current_token.value        == "+" && precedence == 0) {
+				op_type = OP_ADD;
+			} else if (p->current_token.value == "-" && precedence == 0) {
+				op_type = OP_SUB;
+			} else if (p->current_token.value == "*" && precedence == 1) {
+				op_type = OP_MUL;
+			} else if (p->current_token.value == "/" && precedence == 1) {
+				op_type = OP_DIV;
 			}
-			break;
+
+			if (op_type != OP_INVALID) {
+				next_token(p);
+
+				auto op = new Ast_Operator();
+				op->type = op_type;
+				op->lhs = expr;
+				op->rhs = parse_expression(p, precedence);
+
+				if (!op->rhs) {
+					return NULL;
+				}
+
+				set_location(op, op->lhs, op->rhs);
+				return op;
+			}
+		}
+
+		return expr;
+	}
+
+	if (p->current_token.type == TOKEN_SYMBOL) {
+		if (p->current_token.value == "(") {
+			next_token(p);
+			
+			auto expr = parse_expression(p, 0);
+			
+			if (p->current_token.type != TOKEN_SYMBOL || p->current_token.value != ")") {
+				report_error(&p->t, start.loc, "Expected a closing bracket \")\".");
+			}
+
+			set_location(expr, start, p->current_token);
+			next_token(p);
+			return expr;
+		} else if (p->current_token.value == "!") {
+			next_token(p);
+
+			auto op = new Ast_Operator();
+			op->type = OP_NOT;
+			op->lhs =  parse_expression(p, 0);
+
+			set_location(op, op->lhs, op->lhs);
+			return op;
+		} else {
+			report_error(&p->t, p->current_token.loc, "Unexpected symbol in expression.");
+		}
+	}
+
+	auto expr = new Ast_Expression;
+
+	switch (p->current_token.type) {
 		case TOKEN_LITERAL_FLOAT:
 			expr->type = EXP_F64;
 			expr->is_literal = true;
@@ -445,88 +495,25 @@ Ast_Expression *parse_base_expr(Parser *p) {
 			} else if (p->current_token.value == "false") {
 				expr->literal_value._bool = false;
 			} else {
-				// @Todo internal error
+				report_error(&p->t, p->current_token.loc, "Compiler Bug, boolean literal isn't \"true\" nor \"false\".");
 			}
 			break;
 
 		default:
-			assert(false); // @Todo
+			report_error(&p->t, p->current_token.loc, "Compiler Bug, sneaky token type in precedence(%d/heighest): %s.", precedence, TokenType_Strings[p->current_token.type]);
 			break;
 	}
 
 	set_location(expr, start, p->current_token);
-
 	next_token(p);
-
 	return expr;
 }
 
-Ast_Expression *parse_muldiv(Parser *p) {
-	auto expr = parse_base_expr(p);
-
-	if (p->current_token.type == TOKEN_SYMBOL) {
-		OperatorType op_type = OP_INVALID;
-
-		if (p->current_token.value == "*") {
-			op_type = OP_MUL;
-		} else if(p->current_token.value == "/") {
-			op_type = OP_DIV;
-		} 
-
-		if (op_type != OP_INVALID) {
-			next_token(p);
-
-			auto op = new Ast_Operator();
-			op->type = op_type;
-			op->lhs = expr;
-			op->rhs = parse_muldiv(p);
-			if (!op->rhs) {
-				return NULL;
-			}
-
-			set_location(op, op->lhs, op->rhs);
-			return op;
-		}
-	}
-
-	return expr;
-}
-
-Ast_Expression *parse_addsub(Parser *p) {
-	auto expr = parse_muldiv(p);
-
-	if (p->current_token.type == TOKEN_SYMBOL) {
-		OperatorType op_type = OP_INVALID;
-
-		if (p->current_token.value == "+") {
-			op_type = OP_ADD;
-		} else if(p->current_token.value == "-") {
-			op_type = OP_SUB;
-		} 
-
-		if (op_type != OP_INVALID) {
-			next_token(p);
-
-			auto op = new Ast_Operator();
-			op->type = op_type;
-			op->lhs = expr;
-			op->rhs = parse_addsub(p);
-			if (!op->rhs) {
-				return NULL;
-			}
-
-			set_location(op, op->lhs, op->rhs);
-			return op;
-		}
-	}
-
-	return expr;
-}
 
 Ast_Base *next_node(Parser *p) {
 	if (p->current_token.type == TOKEN_EOF)  return NULL;
 
-	return parse_addsub(p);
+	return parse_expression(p, 0);
 }
 
 
